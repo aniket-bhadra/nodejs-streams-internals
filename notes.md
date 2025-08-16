@@ -1,7 +1,7 @@
 # Node.js Streams 
 
 ## Why Streams?
-**Problem:** to send large files to client or to copy large files to another files for any such operations Large files (16GB) load entirely into RAM → Server crashes 💥
+**Problem:** to send large files to client or to copy large files to another files for any such operations Large files first (16GB) load entirely into RAM → Server crashes 💥
 
 **Solution:** Streams divide large files into small chunks → Process piece by piece → RAM stays safe ✅
 
@@ -211,7 +211,7 @@ To **transfer data chunk-by-chunk** (like sending HTTP responses, writing files,
 
  writable streams are the "exit door" for your data chunks! 🚪💨
 
-### **Corrected Explanation (Keeping Your Original Tone)**  
+### **Explanation**  
 Alright, so here's the deal: when you're reading a **huge file** chunk by chunk and storing those chunks into a buffer (in RAM), that whole process is called a **readable stream**. It's like **loading data piece by piece** into a temporary holding area.  
 
 Now, once that data is sitting in the buffer, you **take it out chunk by chunk** and do something with it—like sending it as an HTTP response to a client, writing each chunk to a new file, or saving it to a database. *That* process—the act of **pulling data out of the buffer and shipping it off**—is called a **writable stream**.  
@@ -366,3 +366,6 @@ readable.pipe(writable); // pipe() just pushes
 
 No extra logic. Just streams doing their jobs. 🚀  
 
+process.stdin - This is indeed a readable stream. 
+process.stdout - This is a writable stream.
+console.log() - under the hood it uses process.stdout (and process.stderr for error messages) to output data to the console. When you call console.log(), it's essentially writing to the stdout stream. 
