@@ -334,3 +334,35 @@ objStream.pipe(writable); // Pipe out
 - Both streams need `objectMode`  
 - Faster than string conversion  
 
+### When we do `readable.pipe(writableStream)` or `readable.pipe(res)`, how does `pipe` know whether it has to write to a file or send an HTTP response? How does `pipe` determine this?
+
+`pipe()` **doesn't need to know** what the writable stream does. It just blindly pumps chunks into it.  
+
+- **If `writable` is a file stream** → Chunks get written to disk  
+- **If `writable` is `res` (HTTP)** → Chunks become HTTP response body  
+- **If `writable` is a database** → Chunks get inserted  
+
+```js
+readable.pipe(anything_writable); // pipe() doesn't care what "anything_writable" is
+```  
+
+- **`pipe()`** just pushes chunks into the writable stream.  
+- **The writable stream itself** decides what happens to those chunks:  
+  - `res` → Sends HTTP response  
+  - File stream → Writes to disk  
+  - DB stream → Saves to database  
+
+```js
+readable.pipe(writable); // pipe() just pushes
+```  
+
+**Key Confirmation:**  
+- The behavior **is defined when the writable stream is created** (not by `pipe`).  
+- Example:  
+  ```js
+  const httpWritable = res; // Already configured to send HTTP
+  const fileWritable = fs.createWriteStream(); // Already configured to write files
+  ```  
+
+No extra logic. Just streams doing their jobs. 🚀  
+
