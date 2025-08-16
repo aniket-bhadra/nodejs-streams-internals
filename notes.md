@@ -312,3 +312,25 @@ pipeline(
 - **Cleaner than manual listeners**  
 
 Use it. The end. 🚀  
+
+### Object Streams:
+
+✅ Need `objectMode: true`  
+✅ `highWaterMark` = object count (not bytes)  
+✅ Works for JS objects only (no strings/buffers)  
+
+```js
+const objStream = new Readable({
+  objectMode: true, // Required
+  highWaterMark: 100, // Max objects in buffer
+  read() {} 
+});
+
+objStream.push({data: 123}); // Push objects
+objStream.pipe(writable); // Pipe out
+```  
+
+**Rules:**  
+- Both streams need `objectMode`  
+- Faster than string conversion  
+
