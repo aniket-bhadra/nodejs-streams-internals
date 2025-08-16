@@ -238,3 +238,77 @@ console.log(readableStream.push("hey new data is pushed"));
 
 So basically, when you create a custom readable stream in Node.js, and you manually push data into it, you must handle backpressure yourself—Node.js won’t do it for you automatically like it does with built-in streams (like fs.createReadStream). The highWaterMark just sets a soft limit, but if you ignore it and keep pushing data, the buffer will keep growing uncontrollably, which is bad for memory. To fix this, you have to check the return value of push()—if it returns false, it means the buffer is full (highWaterMark exceeded), and you must stop pushing data until the stream drains (i.e., data is consumed by a client or piped to a writable stream). Only then should you resume pushing. This is manual backpressure control, and if you don’t do it, your app could leak memory or crash under heavy loads. Built-in streams handle this automatically, but in custom streams, it’s your job to manage it properly by extending Readable and implementing the logic yourself.
 
+### pipe(writable) or pipe(res)
+
+When you do `readable.pipe(writable)` or `readable.pipe(res)`, Node handles everything silently. The readable stream sucks in data chunk by chunk - could be from a file, network, whatever. Those chunks then flow straight into your writable stream or HTTP response. If the output side gets clogged (slow disk, bad connection), the readable stream automatically stops pushing more data until things clear up. No manual backpressure checks, no memory explosions - it just works. The pipe() method sorts out all the messy details like chunk sizes and flow control behind your back. You set it and forget it. That's why we use pipe() - it's the lazy (smart) way to stream.
+
+Key points:
+- Automatic chunk management
+- Built-in backpressure
+- Zero manual flow control needed
+- Works for files, HTTP, whatever
+- Just pipe() and move on
+
+Here's your corrected version with your original tone intact:
+
+---
+
+### **Transform Stream**  
+It's for when you need to **read data, modify it, and write it back** - perfect for heavy processing between files/modules. You combine it with `pipe()` to make it smooth.
+
+### **How It Works**  
+1. **Readable Stream** → Feeds data in  
+2. **Transform Stream** → Modifies chunks (replace text, uppercase, etc.)  
+3. **Writable Stream** → Takes the processed data  
+
+```js
+const server = http.createServer((req, res) => {
+  const replaceWordProcessing = new Transform({
+    transform(chunk, encoding, callback) {
+      const final = chunk.toString().replaceAll(/ipsum/gi, "geo"); // Process data
+      callback(null, final); // Pass to next pipe (null = no error)
+    },
+  });
+
+  const readableStream = fs.createReadStream("plain.txt");
+  const writeableStream = fs.createWriteStream("output.txt");
+
+  readableStream
+    .pipe(replaceWordProcessing) // Apply transformation
+    .pipe(writeableStream); // Write to file
+});
+```
+
+### **Key Points**  
+✅ **Pipe Chains**: You can stack multiple transforms (uppercase, add commas, etc.) before the final write.  
+✅ **Auto-Managed**: Backpressure, chunking, and flow are handled automatically.  
+
+### **Problem: Error Handling**  
+If one transform fails, **later pipes keep running** → garbage data/memory leaks.  
+
+#### **Fix 1: Manual Error Listeners (Tedious)**  
+```js
+readableStream
+  .pipe(transform1).on("error", (e) => console.log(e))
+  .pipe(transform2).on("error", (e) => console.log(e)) // Ugh...
+  .pipe(writeableStream);
+```
+
+#### **Fix 2: Use `pipeline()` (Better)**  
+```js
+pipeline(
+  readableStream,
+  replaceWordProcessing, // Stops here if error
+  writeableStream,
+  (err) => err && console.log("Failed:", err) // One catch-all
+);
+```
+**Answer to Your Q:**  
+→ If `replaceWordProcessing` fails, `pipeline()` **automatically stops everything** and triggers the callback. No manual cleanup needed.  
+
+### **Why `pipeline()` Wins**  
+- **Kills the stream chain on error**  
+- **No zombie pipes**  
+- **Cleaner than manual listeners**  
+
+Use it. The end. 🚀  
