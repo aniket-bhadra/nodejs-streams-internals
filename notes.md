@@ -369,3 +369,27 @@ No extra logic. Just streams doing their jobs. 🚀
 process.stdin - This is indeed a readable stream. 
 process.stdout - This is a writable stream.
 console.log() - under the hood it uses process.stdout (and process.stderr for error messages) to output data to the console. When you call console.log(), it's essentially writing to the stdout stream. 
+
+### extra
+There is 2 types of streaming 
+File Streaming (HTTP Progressive)
+Http live streaming
+
+- File Streaming 
+Readable stream reads 64KB chunk from the 1GB video and stores it to buffer, then once buffer is full immediately pipes that 64KB to writable stream (res). Writable stream immediately sends that 64KB to the client over HTTP, meanwhile since buffer is empty readable stream reads the NEXT 64KB chunk. Process repeats until entire video is transferred.
+If the writable stream is created for writing file then instead of sending that 64kb to http response it writes that 64kb to that new file, if that writable stream is created for storing data in db that 64kb is stored to that db. This way Server memory usage: Only ~64KB at any time (not 1GB!) Client starts receiving data immediately.
+It's not about buffer being full or empty - it's about processing speed mismatch:
+Writable stream slower → Readable stream pauses
+Readable stream slower → Writable stream waits
+The buffer acts as a small temporary storage between them, but the pausing/waiting happens based on who can't keep up with the pace.
+Then why we need buffer?
+1. Streams need Buffer objects to handle binary data - you can't stream raw file bytes directly.
+2. Buffer provides consistent 64KB chunks and reuses the same memory space instead of creating new memory for each chunk.
+
+### Does stream breaks the http rule of 1 req = 1 res since it sending multiple chunk datas for 1 req?
+1 request = 1 response, but that 1 response body is chunked into multiple pieces. When a client sends an HTTP request, the server first sends response headers including Transfer-Encoding: chunked, then delivers the response body in multiple chunks (typically 64KB each) while keeping the connection open. The connection only closes after all chunks are sent. This means it's 1 req → 1 response (with chunked body), not 1 req → multiple responses. The response itself is single, just the body content is delivered piece by piece. The Transfer-Encoding: chunked header tells the client "hey, expect the body to come in chunks, don't close connection until I'm done sending all pieces."
+
+File Streaming (HTTP Progressive):
+Stream pre-existing files to client in chunks
+Different encodings (360p, 480p, 720p, 1080p) already exist on server
+Client requests specific quality, server streams that file
