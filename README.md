@@ -393,3 +393,48 @@ File Streaming (HTTP Progressive):
 Stream pre-existing files to client in chunks
 Different encodings (360p, 480p, 720p, 1080p) already exist on server
 Client requests specific quality, server streams that file
+
+### HTTP Live Streaming
+File Streaming:
+1GB_movie.mp4 → [64KB] → [64KB] → [64KB] → Reassemble into 1GB_movie.mp4
+Live Streaming:
+Live_feed → [Segment1_720p.ts (2sec)] → [Segment2_480p.ts (2sec)] → [Segment3_1080p.ts (2sec)] → Play separately
+
+Smooth Live Streaming
+Client downloads Segment1, Segment2, Segment3 FIRST. Then plays Segment1 while downloading Segment4. Prevents freezing if next segment downloads slow.
+
+File chunks = pieces of same file
+
+Live segments = separate mini-videos
+
+HTTP Live Streaming Process:
+
+Live camera → video
+
+Encoder stores feed in buffer
+
+Buffer full → encoder creates multi-quality segments (360p/480p/720p/1080p) for same 2-10sec chunk
+
+Segments saved to storage
+
+Manifest file (.m3u8) updates with new segment URLs
+
+Client requests manifest
+
+Client checks network speed → downloads matching quality segment
+
+Client plays segment while downloading next
+
+Repeat forever
+
+Client network slow → switches to LOWER quality next segment
+Client network fast → switches to HIGHER quality
+
+Server memory: Only current ~10 seconds in memory (not entire stream!)
+Client: Starts playing immediately while downloading next segments
+
+Backpressure handling:
+
+Encoder too slow → live feed drops frames
+
+Client too slow → client buffers ahead segments
