@@ -1,4 +1,31 @@
-# Node.js Streams 
+# Node.js Streams Complete Guide
+
+## Table of Contents
+1. [Why Streams?](#why-streams)
+2. [How Streams Work](#how-streams-work)
+   - [Buffer: The Key Component](#buffer---the-key-component)
+   - [Backpressure](#what-is-backpressure)
+   - [Write Stream Behavior](#write-stream-behavior-not-backpressure)
+3. [Sending Files to Client](#sending-files-to-client)
+4. [Copying Large Files](#copying-large-files)
+5. [pipe() vs Manual write()](#pipe-vs-manual-write---key-differences)
+6. [Buffer Configuration](#buffer-configuration)
+7. [Key Takeaways](#key-takeaways)
+8. [Readable Stream](#what-is-a-readable-stream)
+9. [Writable Stream](#what-is-a-writable-stream)
+10. [Custom Streams](#how-to-create-custom-streams)
+11. [pipe() Internals](#pipewritable-or-piperes)
+    - [How pipe() Determines Destination](#when-we-do-readablepipewritablestream-or-readablepiperes-how-does-pipe-know-whether-it-has-to-write-to-a-file-or-send-an-http-response-how-does-pipe-determine-this)
+12. [Transform Streams](#transform-stream)
+    - [Error Handling in pipe()](#problem-error-handling)
+    - [pipeline() Solution](#fix-2-use-pipeline-better)
+13. [Object Streams](#object-streams)
+14. [Types of Streaming](#extra)
+    - [File Streaming (HTTP Progressive)](#file-streaming-http-progressive)
+    - [HTTP Live Streaming](#http-live-streaming)
+    - [Does Streaming Break HTTP Rules?](#does-stream-breaks-the-http-rule-of-1-req--1-res-since-it-sending-multiple-chunk-datas-for-1-req)
+
+---
 
 ## Why Streams?
 **Problem:** to send large files to client or to copy large files to another files for any such operations Large files first (16GB) load entirely into RAM → Server crashes 💥
